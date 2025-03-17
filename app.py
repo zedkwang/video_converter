@@ -359,16 +359,25 @@ st.title("로컬 마운트 동영상 변환기 🎬")
 with st.sidebar:
     st.header("연결 및 설정")
     
-    # 마운트 경로 입력
-    drive_path = st.text_input("마운트된 드라이브 경로", 
-                              value="/Volumes/GoogleDrive/내 드라이브" if not st.session_state.mounted else st.session_state.drive_path,
-                              help="로컬에 마운트된 구글 드라이브 경로를 입력하세요")
+    # 폴더 선택 방식 라디오 버튼 추가
+    folder_option = st.radio("폴더 선택 방식", ["구글 드라이브", "로컬 폴더"])
     
-    if st.button("드라이브 연결", disabled=st.session_state.mounted):
+    if folder_option == "구글 드라이브":
+        # 구글 드라이브 마운트 경로 입력
+        drive_path = st.text_input("마운트된 드라이브 경로", 
+                                  value="/Users/ridi/Library/CloudStorage/GoogleDrive-jieyon.tora@ridi.com/내 드라이브" if not st.session_state.mounted else st.session_state.drive_path,
+                                  help="로컬에 마운트된 구글 드라이브 경로를 입력하세요")
+    else:
+        # 로컬 폴더 경로 입력
+        drive_path = st.text_input("동영상 파일이 있는 로컬 폴더 경로", 
+                                  value="/Users/ridi/Downloads" if not st.session_state.mounted else st.session_state.drive_path,
+                                  help="동영상 파일이 있는 로컬 폴더 경로를 입력하세요")
+    
+    if st.button("폴더 연결", disabled=st.session_state.mounted):
         use_local_mounted_drive(drive_path)
     
     if st.session_state.mounted:
-        st.success("드라이브 연결됨 ✅")
+        st.success("폴더 연결됨 ✅")
         
         # 파일 새로고침 버튼
         if st.button("파일 목록 새로고침"):
