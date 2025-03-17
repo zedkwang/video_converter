@@ -10,8 +10,8 @@ from moviepy.video.io.VideoFileClip import VideoFileClip
 
 
 # 구글 드라이브 인증 및 마운트 관련 라이브러리
-from pydrive.auth import GoogleAuth
-from pydrive.drive import GoogleDrive
+from pydrive2.auth import GoogleAuth
+from pydrive2.drive import GoogleDrive
 from google.colab import drive
 
 # 페이지 기본 설정
