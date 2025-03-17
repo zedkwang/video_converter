@@ -6,7 +6,7 @@ import tempfile
 from pathlib import Path
 import threading
 import subprocess
-from moviepy.editor import VideoFileClip
+from moviepy.video.io.VideoFileClip import VideoFileClip
 
 # 페이지 기본 설정
 st.set_page_config(
