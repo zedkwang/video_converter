@@ -6,7 +6,8 @@ import tempfile
 from pathlib import Path
 import threading
 import subprocess
-from moviepy.editor import VideoFileClip
+from moviepy.video.io.VideoFileClip import VideoFileClip
+
 
 # 구글 드라이브 인증 및 마운트 관련 라이브러리
 from pydrive.auth import GoogleAuth
