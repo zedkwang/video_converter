@@ -6,24 +6,16 @@ import tempfile
 from pathlib import Path
 import threading
 import subprocess
-from moviepy.video.io.VideoFileClip import VideoFileClip
-
-
-# 구글 드라이브 인증 및 마운트 관련 라이브러리
-from pydrive2.auth import GoogleAuth
-from pydrive2.drive import GoogleDrive
-from google.colab import drive
+from moviepy.editor import VideoFileClip
 
 # 페이지 기본 설정
 st.set_page_config(
-    page_title="구글 드라이브 동영상 변환기",
+    page_title="로컬 마운트 동영상 변환기",
     page_icon="🎬",
     layout="wide"
 )
 
 # 세션 상태 초기화
-if 'mounted' not in st.session_state:
-    st.session_state.mounted = False
 if 'files' not in st.session_state:
     st.session_state.files = []
 if 'output_files' not in st.session_state:
@@ -40,6 +32,10 @@ if 'completed_files' not in st.session_state:
     st.session_state.completed_files = 0
 if 'total_files' not in st.session_state:
     st.session_state.total_files = 0
+if 'drive_path' not in st.session_state:
+    st.session_state.drive_path = ""
+if 'mounted' not in st.session_state:
+    st.session_state.mounted = False
 
 # 임시 디렉토리 설정
 TEMP_DIR = tempfile.mkdtemp()
@@ -51,54 +47,17 @@ def add_log(message):
     timestamp = time.strftime('%H:%M:%S')
     st.session_state.logs.append(f"[{timestamp}] {message}")
 
-# 구글 드라이브 마운트 함수
-def mount_google_drive():
-    """구글 드라이브 마운트"""
-    try:
-        # Streamlit에서는 Colab 드라이브 마운트 방식이 직접 작동하지 않음
-        # 대신 PyDrive를 사용한 인증 방식 사용
-        gauth = GoogleAuth()
-        
-        # 로컬에 저장된 인증 정보 사용 시도
-        gauth.LoadCredentialsFile("mycreds.txt")
-        
-        if gauth.credentials is None:
-            # 인증 정보가 없으면 로컬 웹 브라우저로 인증
-            gauth.LocalWebserverAuth()
-        elif gauth.access_token_expired:
-            # 토큰이 만료되었으면 갱신
-            gauth.Refresh()
-        else:
-            # 기존 인증 정보 사용
-            gauth.Authorize()
-            
-        # 인증 정보 저장
-        gauth.SaveCredentialsFile("mycreds.txt")
-        
-        # Google Drive 객체 생성
-        drive = GoogleDrive(gauth)
-        
-        add_log("구글 드라이브 연결 성공")
-        st.session_state.mounted = True
-        st.session_state.drive = drive
-        
-        return True
-    except Exception as e:
-        add_log(f"구글 드라이브 마운트 오류: {str(e)}")
-        st.error(f"구글 드라이브 마운트 실패: {str(e)}")
-        return False
-
-# 대체 방법: 로컬에 이미 마운트된 구글 드라이브 경로 사용
+# 로컬에 마운트된 드라이브 경로 사용
 def use_local_mounted_drive(mount_path):
-    """로컬에 마운트된 구글 드라이브 경로 사용"""
+    """로컬에 마운트된 드라이브 경로 사용"""
     if os.path.exists(mount_path) and os.path.isdir(mount_path):
         st.session_state.mounted = True
         st.session_state.drive_path = mount_path
-        add_log(f"로컬 마운트된 구글 드라이브 경로 설정: {mount_path}")
+        add_log(f"마운트된 드라이브 경로 설정: {mount_path}")
         return True
     else:
-        add_log(f"유효하지 않은 구글 드라이브 마운트 경로: {mount_path}")
-        st.error(f"유효하지 않은 구글 드라이브 마운트 경로입니다: {mount_path}")
+        add_log(f"유효하지 않은 드라이브 마운트 경로: {mount_path}")
+        st.error(f"유효하지 않은 마운트 경로입니다: {mount_path}")
         return False
 
 # 파일 정보 추출 함수
@@ -347,12 +306,12 @@ def stop_conversion():
 
 # 파일 목록 업데이트 함수
 def update_file_list():
-    """구글 드라이브에서 비디오 파일 목록 가져오기"""
+    """마운트된 드라이브에서 비디오 파일 목록 가져오기"""
     if not st.session_state.mounted:
-        st.warning("구글 드라이브가 연결되지 않았습니다.")
+        st.warning("드라이브가 연결되지 않았습니다.")
         return
     
-    # 구글 드라이브 폴더 경로에서 동영상 파일 찾기
+    # 마운트된 드라이브 폴더 경로에서 동영상 파일 찾기
     try:
         drive_path = st.session_state.drive_path
         video_extensions = ['.mp4', '.avi', '.mov', '.mkv', '.webm', '.flv']
@@ -360,7 +319,7 @@ def update_file_list():
         # 이전 파일 목록 초기화
         st.session_state.files = []
         
-        add_log(f"구글 드라이브 폴더 스캔 중: {drive_path}")
+        add_log(f"폴더 스캔 중: {drive_path}")
         
         # 파일 목록 가져오기
         for root, dirs, files in os.walk(drive_path):
@@ -394,14 +353,14 @@ def update_file_list():
         st.error(f"파일 목록 조회 오류: {str(e)}")
 
 # UI 렌더링
-st.title("구글 드라이브 동영상 변환기 🎬")
+st.title("로컬 마운트 동영상 변환기 🎬")
 
-# 사이드바 - 구글 드라이브 연결 및 설정
+# 사이드바 - 드라이브 연결 및 설정
 with st.sidebar:
     st.header("연결 및 설정")
     
-    # 구글 드라이브 마운트 경로 입력
-    drive_path = st.text_input("구글 드라이브 마운트 경로", 
+    # 마운트 경로 입력
+    drive_path = st.text_input("마운트된 드라이브 경로", 
                               value="/Volumes/GoogleDrive/내 드라이브" if not st.session_state.mounted else st.session_state.drive_path,
                               help="로컬에 마운트된 구글 드라이브 경로를 입력하세요")
     
@@ -409,7 +368,7 @@ with st.sidebar:
         use_local_mounted_drive(drive_path)
     
     if st.session_state.mounted:
-        st.success("구글 드라이브 연결됨 ✅")
+        st.success("드라이브 연결됨 ✅")
         
         # 파일 새로고침 버튼
         if st.button("파일 목록 새로고침"):
@@ -448,7 +407,7 @@ with file_col:
     st.header("파일 목록")
     
     if not st.session_state.mounted:
-        st.info("구글 드라이브를 먼저 연결해주세요.")
+        st.info("드라이브를 먼저 연결해주세요.")
     elif not st.session_state.files:
         st.info("드라이브에서 비디오 파일을 찾을 수 없습니다. 파일 목록 새로고침을 클릭하세요.")
     else:
